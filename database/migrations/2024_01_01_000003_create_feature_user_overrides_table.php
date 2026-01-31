@@ -6,21 +6,20 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    public function up(): void
+    public function up()
     {
         Schema::create('feature_user_overrides', function (Blueprint $table) {
             $table->id();
             $table->foreignId('feature_flag_id')->constrained()->onDelete('cascade');
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
-            $table->boolean('enabled');
+            $table->boolean('enabled')->default(false);
             $table->timestamps();
-
+            
             $table->unique(['feature_flag_id', 'user_id']);
-            $table->index(['user_id', 'enabled']);
         });
     }
 
-    public function down(): void
+    public function down()
     {
         Schema::dropIfExists('feature_user_overrides');
     }

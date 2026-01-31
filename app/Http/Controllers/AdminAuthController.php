@@ -8,9 +8,11 @@ class AdminAuthController extends Controller
 {
     public function showLogin()
     {
+        // If already logged in, redirect to dashboard
         if (session('admin_logged_in')) {
             return redirect()->route('admin.dashboard');
         }
+        
         return view('admin.login');
     }
 
@@ -18,10 +20,10 @@ class AdminAuthController extends Controller
     {
         $credentials = [
             'admin@featureflags.com' => 'admin123',
-            'manager@featureflags.com' => 'manager123',
-            'developer@featureflags.com' => 'dev123'
+            'john@example.com' => 'password',
+            'jane@example.com' => 'password',
         ];
-        
+
         if (isset($credentials[$request->email]) && 
             $credentials[$request->email] === $request->password) {
             session([
@@ -31,8 +33,8 @@ class AdminAuthController extends Controller
             ]);
             return redirect()->route('admin.dashboard');
         }
-        
-        return back()->withErrors(['email' => 'Invalid credentials']);
+
+        return back()->withErrors(['email' => 'Invalid credentials. Use admin@featureflags.com / admin123']);
     }
 
     public function logout()
