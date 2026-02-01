@@ -3,67 +3,103 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ config('app.name') }} - Admin Panel</title>
+    <title>@yield('title', 'Admin Panel') - Feature Flag Manager</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 </head>
 <body class="bg-gray-100">
-    <div class="min-h-screen flex">
+    <div class="flex h-screen">
         <!-- Sidebar -->
-        <aside class="w-64 bg-gradient-to-b from-indigo-700 to-purple-800 text-white flex-shrink-0">
-            <div class="p-6">
-                <h1 class="text-2xl font-bold">Feature Flags</h1>
-                <p class="text-sm text-indigo-200">Admin Panel</p>
+        <div class="w-64 bg-gradient-to-b from-indigo-700 to-purple-800 text-white flex flex-col">
+            <!-- Logo -->
+            <div class="p-6 border-b border-indigo-600">
+                <h1 class="text-2xl font-bold">Admin Panel</h1>
+                <p class="text-sm text-indigo-200 mt-1">Feature Flag Manager</p>
             </div>
-            
-            <nav class="mt-6">
-                <a href="{{ route('admin.dashboard') }}" class="flex items-center px-6 py-3 hover:bg-indigo-600 transition {{ request()->routeIs('admin.dashboard') ? 'bg-indigo-600 border-l-4 border-white' : '' }}">
-                    <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
-                    </svg>
-                    Dashboard
-                </a>
-                
-                <a href="{{ route('admin.flags.index') }}" class="flex items-center px-6 py-3 hover:bg-indigo-600 transition {{ request()->routeIs('admin.flags.*') ? 'bg-indigo-600 border-l-4 border-white' : '' }}">
-                    <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9"></path>
-                    </svg>
-                    Feature Flags
-                </a>
-                
-                <a href="/debug" class="flex items-center px-6 py-3 hover:bg-indigo-600 transition">
-                    <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                    </svg>
-                    Debug Logs
-                </a>
-            </nav>
-            
-            <div class="absolute bottom-0 w-64 p-6 border-t border-indigo-600">
-                <div class="flex items-center mb-4">
-                    <div class="w-10 h-10 rounded-full bg-indigo-500 flex items-center justify-center text-lg font-bold">
-                        {{ strtoupper(substr(session('admin_user', 'A'), 0, 1)) }}
+
+            <!-- User Info -->
+            <div class="p-6 border-b border-indigo-600">
+                <div class="flex items-center">
+                    <div class="bg-indigo-500 w-10 h-10 rounded-full flex items-center justify-center">
+                        <span class="text-lg font-bold">{{ substr(session('admin_user', 'A'), 0, 1) }}</span>
                     </div>
                     <div class="ml-3">
                         <p class="font-semibold">{{ session('admin_user', 'Admin') }}</p>
-                        <p class="text-xs text-indigo-200">{{ session('admin_email', '') }}</p>
+                        <p class="text-xs text-indigo-200">{{ session('admin_email', 'admin@example.com') }}</p>
                     </div>
                 </div>
+            </div>
+
+            <!-- Navigation -->
+            <nav class="flex-1 p-4">
+                <ul class="space-y-2">
+                    <li>
+                        <a href="{{ route('admin.dashboard') }}" class="flex items-center px-4 py-3 rounded-lg hover:bg-indigo-600 transition duration-300 {{ request()->routeIs('admin.dashboard') ? 'bg-indigo-600' : '' }}">
+                            <svg class="w-5 h-5 mr-3" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"></path>
+                            </svg>
+                            Dashboard
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{{ route('admin.features.index') }}" class="flex items-center px-4 py-3 rounded-lg hover:bg-indigo-600 transition duration-300 {{ request()->routeIs('admin.features.*') ? 'bg-indigo-600' : '' }}">
+                            <svg class="w-5 h-5 mr-3" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z"></path>
+                            </svg>
+                            Feature Flags
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+
+            <!-- Logout -->
+            <div class="p-4 border-t border-indigo-600">
                 <form action="{{ route('admin.logout') }}" method="POST">
                     @csrf
-                    <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-500 px-4 py-2 rounded transition">
+                    <button type="submit" class="w-full flex items-center px-4 py-3 rounded-lg hover:bg-indigo-600 transition duration-300">
+                        <svg class="w-5 h-5 mr-3" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M3 3a1 1 0 00-1 1v12a1 1 0 102 0V4a1 1 0 00-1-1zm10.293 9.293a1 1 0 001.414 1.414l3-3a1 1 0 000-1.414l-3-3a1 1 0 10-1.414 1.414L14.586 9H7a1 1 0 100 2h7.586l-1.293 1.293z" clip-rule="evenodd"></path>
+                        </svg>
                         Logout
                     </button>
                 </form>
             </div>
-        </aside>
-        
+        </div>
+
         <!-- Main Content -->
-        <main class="flex-1 overflow-x-hidden overflow-y-auto">
-            <div class="container mx-auto px-6 py-8">
+        <div class="flex-1 overflow-y-auto">
+            <!-- Top Bar -->
+            <div class="bg-white shadow-sm border-b border-gray-200 px-8 py-4">
+                <div class="flex justify-between items-center">
+                    <h2 class="text-2xl font-bold text-gray-800">@yield('page-title', 'Dashboard')</h2>
+                    <div class="text-sm text-gray-500">
+                        Environment: <span class="font-semibold text-indigo-600">{{ config('app.env') }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Page Content -->
+            <div class="p-8">
+                @if(session('success'))
+                    <div class="bg-green-100 border border-green-400 text-green-700 px-6 py-4 rounded-lg mb-6 flex items-center">
+                        <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                        </svg>
+                        {{ session('success') }}
+                    </div>
+                @endif
+
+                @if(session('error'))
+                    <div class="bg-red-100 border border-red-400 text-red-700 px-6 py-4 rounded-lg mb-6 flex items-center">
+                        <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>
+                        </svg>
+                        {{ session('error') }}
+                    </div>
+                @endif
+
                 @yield('content')
             </div>
-        </main>
+        </div>
     </div>
 </body>
 </html>

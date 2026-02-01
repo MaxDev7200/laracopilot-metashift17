@@ -1,90 +1,102 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Debug Dashboard</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="bg-gray-100">
-    <div class="container mx-auto px-4 py-8">
-        <div class="bg-white rounded-lg shadow-lg p-8 mb-6">
-            <h1 class="text-3xl font-bold text-gray-800 mb-6">Debug Dashboard</h1>
-            
-            <!-- System Status -->
-            <div class="mb-8">
-                <h2 class="text-xl font-bold text-gray-700 mb-4">System Status</h2>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div class="bg-green-100 border border-green-400 rounded-lg p-4">
-                        <p class="text-green-800 font-semibold">✓ Laravel Running</p>
-                        <p class="text-sm text-green-600">Version {{ app()->version() }}</p>
-                    </div>
-                    <div class="bg-{{ $dbConnected ? 'green' : 'red' }}-100 border border-{{ $dbConnected ? 'green' : 'red' }}-400 rounded-lg p-4">
-                        <p class="text-{{ $dbConnected ? 'green' : 'red' }}-800 font-semibold">{{ $dbConnected ? '✓' : '✗' }} Database</p>
-                        <p class="text-sm text-{{ $dbConnected ? 'green' : 'red' }}-600">{{ $dbConnected ? 'Connected' : 'Not Connected' }}</p>
-                    </div>
-                    <div class="bg-blue-100 border border-blue-400 rounded-lg p-4">
-                        <p class="text-blue-800 font-semibold">Environment</p>
-                        <p class="text-sm text-blue-600">{{ config('app.env') }}</p>
-                    </div>
-                </div>
+@extends('layouts.app')
+
+@section('title', 'Debug - Feature Flag Manager')
+
+@section('content')
+<div class="max-w-7xl mx-auto px-4 py-12">
+    <div class="bg-white rounded-xl shadow-lg p-8">
+        <h1 class="text-3xl font-bold mb-6 text-gray-800">Feature Flag Debug Panel</h1>
+        <p class="text-gray-600 mb-8">View all feature flags and their current status in the <span class="font-semibold text-indigo-600">{{ config('app.env') }}</span> environment.</p>
+
+        @php
+            $flags = \App\Models\FeatureFlag::with('environments')->get();
+            $currentEnv = config('app.env');
+        @endphp
+
+        @if($flags->isEmpty())
+            <div class="bg-yellow-50 border border-yellow-200 text-yellow-800 px-6 py-4 rounded-lg">
+                <p class="font-semibold">No feature flags found</p>
+                <p class="text-sm mt-1">Run <code class="bg-yellow-100 px-2 py-1 rounded">php artisan db:seed</code> to create sample flags</p>
             </div>
-            
-            <!-- Database Tables -->
-            @if($dbConnected)
-            <div class="mb-8">
-                <h2 class="text-xl font-bold text-gray-700 mb-4">Database Tables</h2>
-                <div class="overflow-x-auto">
-                    <table class="min-w-full bg-white border">
-                        <thead class="bg-gray-50">
-                            <tr>
-                                <th class="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase">Table Name</th>
-                                <th class="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase">Row Count</th>
+        @else
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Flag Key</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Global Active</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ ucfirst($currentEnv) }} Status</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rollout %</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Final Result</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        @foreach($flags as $flag)
+                            @php
+                                $envSetting = $flag->environments->where('environment', $currentEnv)->first();
+                                $isEnabled = feature($flag->key);
+                            @endphp
+                            <tr class="hover:bg-gray-50">
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-900">{{ $flag->key }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $flag->name }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                    @if($flag->is_active)
+                                        <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Active</span>
+                                    @else
+                                        <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">Inactive</span>
+                                    @endif
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                    @if($envSetting && $envSetting->is_enabled)
+                                        <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">Enabled</span>
+                                    @else
+                                        <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">Disabled</span>
+                                    @endif
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                    {{ $envSetting ? $envSetting->rollout_percentage : 0 }}%
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                    @if($isEnabled)
+                                        <span class="px-3 py-1 inline-flex text-xs leading-5 font-bold rounded-full bg-green-500 text-white">✓ ENABLED</span>
+                                    @else
+                                        <span class="px-3 py-1 inline-flex text-xs leading-5 font-bold rounded-full bg-red-500 text-white">✗ DISABLED</span>
+                                    @endif
+                                </td>
                             </tr>
-                        </thead>
-                        <tbody>
-                            @foreach($tables as $table => $count)
-                            <tr class="border-t">
-                                <td class="px-6 py-4 font-mono text-sm">{{ $table }}</td>
-                                <td class="px-6 py-4 text-sm font-semibold">{{ $count }}</td>
-                            </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Summary Stats -->
+            <div class="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="bg-indigo-50 border border-indigo-200 rounded-lg p-6">
+                    <div class="text-sm text-indigo-600 font-semibold">Total Flags</div>
+                    <div class="text-3xl font-bold text-indigo-900 mt-2">{{ $flags->count() }}</div>
+                </div>
+                <div class="bg-green-50 border border-green-200 rounded-lg p-6">
+                    <div class="text-sm text-green-600 font-semibold">Currently Enabled</div>
+                    <div class="text-3xl font-bold text-green-900 mt-2">{{ $flags->filter(fn($f) => feature($f->key))->count() }}</div>
+                </div>
+                <div class="bg-purple-50 border border-purple-200 rounded-lg p-6">
+                    <div class="text-sm text-purple-600 font-semibold">Environment</div>
+                    <div class="text-3xl font-bold text-purple-900 mt-2">{{ ucfirst($currentEnv) }}</div>
                 </div>
             </div>
-            @endif
-            
-            <!-- Recent Logs -->
-            <div class="mb-8">
-                <h2 class="text-xl font-bold text-gray-700 mb-4">Recent Laravel Logs</h2>
-                @if(!empty($logs))
-                <div class="bg-gray-900 text-green-400 p-4 rounded font-mono text-sm overflow-x-auto max-h-96">
-                    @foreach($logs as $log)
-                    <div class="mb-2">{{ $log }}</div>
-                    @endforeach
-                </div>
-                @else
-                <p class="text-gray-600">No recent logs found</p>
-                @endif
-            </div>
-            
-            <!-- Quick Links -->
-            <div>
-                <h2 class="text-xl font-bold text-gray-700 mb-4">Quick Links</h2>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <a href="{{ route('home') }}" class="bg-blue-600 text-white px-4 py-3 rounded-lg hover:bg-blue-700 transition text-center font-semibold">
-                        Homepage
-                    </a>
-                    <a href="{{ route('admin.login') }}" class="bg-indigo-600 text-white px-4 py-3 rounded-lg hover:bg-indigo-700 transition text-center font-semibold">
-                        Admin Login
-                    </a>
-                    <a href="{{ route('admin.dashboard') }}" class="bg-purple-600 text-white px-4 py-3 rounded-lg hover:bg-purple-700 transition text-center font-semibold">
-                        Dashboard
-                    </a>
+
+            <!-- Test Commands -->
+            <div class="mt-8 bg-gray-50 border border-gray-200 rounded-lg p-6">
+                <h3 class="text-lg font-bold mb-4 text-gray-800">Test Commands</h3>
+                <div class="space-y-2 text-sm">
+                    <p><code class="bg-gray-800 text-green-400 px-3 py-1 rounded">php artisan feature:list</code> - List all flags</p>
+                    <p><code class="bg-gray-800 text-green-400 px-3 py-1 rounded">php artisan feature:check flag_key</code> - Check specific flag</p>
+                    <p><code class="bg-gray-800 text-green-400 px-3 py-1 rounded">php artisan feature:enable flag_key userId</code> - Enable for user</p>
+                    <p><code class="bg-gray-800 text-green-400 px-3 py-1 rounded">php artisan feature:cache:clear</code> - Clear cache</p>
                 </div>
             </div>
-        </div>
+        @endif
     </div>
-</body>
-</html>
+</div>
+@endsection
