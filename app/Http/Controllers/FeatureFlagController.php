@@ -14,18 +14,7 @@ class FeatureFlagController extends Controller
             return redirect()->route('admin.login');
         }
 
-        $flags = FeatureFlag::with('environments')->orderBy('created_at', 'desc')->paginate(15);
-        
-        // Dashboard view uses this same method
-        if (request()->routeIs('admin.dashboard')) {
-            $totalFlags = FeatureFlag::count();
-            $enabledFlags = FeatureFlag::where('enabled', true)->count();
-            $disabledFlags = FeatureFlag::where('enabled', false)->count();
-            $recentFlags = FeatureFlag::with('environments')->orderBy('created_at', 'desc')->limit(10)->get();
-            
-            return view('admin.dashboard', compact('totalFlags', 'enabledFlags', 'disabledFlags', 'recentFlags'));
-        }
-        
+        $flags = FeatureFlag::with('environments')->orderBy('created_at', 'desc')->get();
         return view('admin.features.index', compact('flags'));
     }
 
@@ -35,7 +24,8 @@ class FeatureFlagController extends Controller
             return redirect()->route('admin.login');
         }
 
-        return view('admin.features.create');
+        $environments = ['local', 'development', 'staging', 'production'];
+        return view('admin.features.create', compact('environments'));
     }
 
     public function store(Request $request)
@@ -45,28 +35,28 @@ class FeatureFlagController extends Controller
         }
 
         $validated = $request->validate([
-            'name' => 'required|string|max:255',
             'key' => 'required|string|max:255|unique:feature_flags,key',
+            'name' => 'required|string|max:255',
             'description' => 'nullable|string',
-            'enabled' => 'nullable|boolean',
+            'is_active' => 'boolean'
         ]);
 
-        $validated['enabled'] = $request->has('enabled');
+        $validated['is_active'] = $request->has('is_active');
 
         $flag = FeatureFlag::create($validated);
 
         // Create environment settings
-        $environments = $request->input('environments', []);
-        foreach (['development', 'staging', 'production'] as $env) {
+        $environments = ['local', 'development', 'staging', 'production'];
+        foreach ($environments as $env) {
             FeatureEnvironment::create([
                 'feature_flag_id' => $flag->id,
                 'environment' => $env,
-                'enabled' => isset($environments[$env]['enabled']),
-                'rollout_percentage' => $environments[$env]['rollout_percentage'] ?? 100,
+                'is_enabled' => $request->input("env_{$env}_enabled", false),
+                'rollout_percentage' => $request->input("env_{$env}_percentage", 100)
             ]);
         }
 
-        return redirect()->route('admin.flags.index')->with('success', 'Feature flag created successfully!');
+        return redirect()->route('admin.features.index')->with('success', 'Feature flag created successfully!');
     }
 
     public function edit($id)
@@ -76,7 +66,8 @@ class FeatureFlagController extends Controller
         }
 
         $flag = FeatureFlag::with('environments')->findOrFail($id);
-        return view('admin.features.edit', compact('flag'));
+        $environments = ['local', 'development', 'staging', 'production'];
+        return view('admin.features.edit', compact('flag', 'environments'));
     }
 
     public function update(Request $request, $id)
@@ -88,26 +79,35 @@ class FeatureFlagController extends Controller
         $flag = FeatureFlag::findOrFail($id);
 
         $validated = $request->validate([
-            'name' => 'required|string|max:255',
             'key' => 'required|string|max:255|unique:feature_flags,key,' . $id,
+            'name' => 'required|string|max:255',
             'description' => 'nullable|string',
-            'enabled' => 'nullable|boolean',
+            'is_active' => 'boolean'
         ]);
 
-        $validated['enabled'] = $request->has('enabled');
+        $validated['is_active'] = $request->has('is_active');
 
         $flag->update($validated);
 
         // Update environment settings
-        $environments = $request->input('environments', []);
-        foreach ($flag->environments as $env) {
-            $env->update([
-                'enabled' => isset($environments[$env->environment]['enabled']),
-                'rollout_percentage' => $environments[$env->environment]['rollout_percentage'] ?? 100,
-            ]);
+        $environments = ['local', 'development', 'staging', 'production'];
+        foreach ($environments as $env) {
+            FeatureEnvironment::updateOrCreate(
+                [
+                    'feature_flag_id' => $flag->id,
+                    'environment' => $env
+                ],
+                [
+                    'is_enabled' => $request->input("env_{$env}_enabled", false),
+                    'rollout_percentage' => $request->input("env_{$env}_percentage", 100)
+                ]
+            );
         }
 
-        return redirect()->route('admin.flags.index')->with('success', 'Feature flag updated successfully!');
+        // Clear cache for this flag
+        app(\App\Services\FeatureFlagService::class)->clearCacheForFlag($flag->key);
+
+        return redirect()->route('admin.features.index')->with('success', 'Feature flag updated successfully!');
     }
 
     public function destroy($id)
@@ -117,9 +117,14 @@ class FeatureFlagController extends Controller
         }
 
         $flag = FeatureFlag::findOrFail($id);
+        $flagKey = $flag->key;
+        
         $flag->delete();
 
-        return redirect()->route('admin.flags.index')->with('success', 'Feature flag deleted successfully!');
+        // Clear cache for this flag
+        app(\App\Services\FeatureFlagService::class)->clearCacheForFlag($flagKey);
+
+        return redirect()->route('admin.features.index')->with('success', 'Feature flag deleted successfully!');
     }
 
     public function toggle($id)
@@ -129,8 +134,11 @@ class FeatureFlagController extends Controller
         }
 
         $flag = FeatureFlag::findOrFail($id);
-        $flag->enabled = !$flag->enabled;
+        $flag->is_active = !$flag->is_active;
         $flag->save();
+
+        // Clear cache for this flag
+        app(\App\Services\FeatureFlagService::class)->clearCacheForFlag($flag->key);
 
         return redirect()->back()->with('success', 'Feature flag toggled successfully!');
     }

@@ -10,30 +10,27 @@ class UserSeeder extends Seeder
 {
     public function run(): void
     {
-        // Create admin user
+        // Create admin user for testing
         User::create([
             'name' => 'Admin User',
             'email' => 'admin@featureflags.com',
             'password' => Hash::make('admin123'),
-            'email_verified_at' => now(),
+            'email_verified_at' => now()
         ]);
 
-        // Create test users
+        // Create additional test users
         User::create([
-            'name' => 'John Developer',
-            'email' => 'john@example.com',
-            'password' => Hash::make('password'),
-            'email_verified_at' => now(),
+            'name' => 'Test User',
+            'email' => 'test@featureflags.com',
+            'password' => Hash::make('test123'),
+            'email_verified_at' => now()
         ]);
 
         User::create([
-            'name' => 'Jane Tester',
-            'email' => 'jane@example.com',
-            'password' => Hash::make('password'),
-            'email_verified_at' => now(),
+            'name' => 'Demo User',
+            'email' => 'demo@featureflags.com',
+            'password' => Hash::make('demo123'),
+            'email_verified_at' => now()
         ]);
-
-        // Create additional sample users
-        User::factory()->count(10)->create();
     }
 }

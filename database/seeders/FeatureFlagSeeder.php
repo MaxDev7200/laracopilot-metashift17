@@ -10,112 +10,81 @@ class FeatureFlagSeeder extends Seeder
 {
     public function run(): void
     {
-        // Create sample feature flags
-        $features = [
+        $flags = [
             [
-                'name' => 'new_dashboard',
-                'key' => 'new_dashboard',
-                'description' => 'Enable new redesigned dashboard interface with enhanced analytics',
-                'enabled' => true,
-            ],
-            [
-                'name' => 'dark_mode',
                 'key' => 'dark_mode',
-                'description' => 'Allow users to toggle dark mode theme across the application',
-                'enabled' => true,
+                'name' => 'Dark Mode',
+                'description' => 'Enable dark mode theme for the application',
+                'is_active' => true,
+                'environments' => [
+                    'local' => ['enabled' => true, 'percentage' => 100],
+                    'development' => ['enabled' => true, 'percentage' => 100],
+                    'staging' => ['enabled' => true, 'percentage' => 100],
+                    'production' => ['enabled' => true, 'percentage' => 100]
+                ]
             ],
             [
-                'name' => 'payment_gateway_v2',
-                'key' => 'payment_gateway_v2',
-                'description' => 'New payment processing system with multiple gateway support',
-                'enabled' => false,
+                'key' => 'new_dashboard',
+                'name' => 'New Dashboard',
+                'description' => 'Redesigned dashboard with improved analytics',
+                'is_active' => true,
+                'environments' => [
+                    'local' => ['enabled' => true, 'percentage' => 100],
+                    'development' => ['enabled' => true, 'percentage' => 100],
+                    'staging' => ['enabled' => true, 'percentage' => 50],
+                    'production' => ['enabled' => false, 'percentage' => 0]
+                ]
             ],
             [
-                'name' => 'advanced_search',
-                'key' => 'advanced_search',
-                'description' => 'Enhanced search functionality with filters and AI-powered suggestions',
-                'enabled' => true,
-            ],
-            [
-                'name' => 'email_notifications',
-                'key' => 'email_notifications',
-                'description' => 'Send email notifications for important user actions and updates',
-                'enabled' => true,
-            ],
-            [
-                'name' => 'api_v3',
-                'key' => 'api_v3',
-                'description' => 'Latest API version with GraphQL support and improved performance',
-                'enabled' => false,
-            ],
-            [
-                'name' => 'two_factor_auth',
-                'key' => 'two_factor_auth',
-                'description' => 'Two-factor authentication using SMS or authenticator apps',
-                'enabled' => true,
-            ],
-            [
-                'name' => 'social_login',
-                'key' => 'social_login',
-                'description' => 'Login with Google, Facebook, GitHub and other OAuth providers',
-                'enabled' => false,
-            ],
-            [
-                'name' => 'real_time_chat',
-                'key' => 'real_time_chat',
-                'description' => 'Live chat support system with WebSocket connections',
-                'enabled' => false,
-            ],
-            [
-                'name' => 'export_reports',
-                'key' => 'export_reports',
-                'description' => 'Export data and reports to PDF, Excel, and CSV formats',
-                'enabled' => true,
-            ],
-            [
-                'name' => 'mobile_app_sync',
-                'key' => 'mobile_app_sync',
-                'description' => 'Synchronize data between web and mobile applications',
-                'enabled' => true,
-            ],
-            [
-                'name' => 'beta_features',
                 'key' => 'beta_features',
-                'description' => 'Access to experimental beta features for testing',
-                'enabled' => false,
+                'name' => 'Beta Features',
+                'description' => 'Access to beta features for testing',
+                'is_active' => true,
+                'environments' => [
+                    'local' => ['enabled' => true, 'percentage' => 100],
+                    'development' => ['enabled' => true, 'percentage' => 100],
+                    'staging' => ['enabled' => true, 'percentage' => 25],
+                    'production' => ['enabled' => false, 'percentage' => 0]
+                ]
             ],
             [
-                'name' => 'analytics_dashboard',
-                'key' => 'analytics_dashboard',
-                'description' => 'Comprehensive analytics and reporting dashboard with charts',
-                'enabled' => true,
+                'key' => 'advanced_analytics',
+                'name' => 'Advanced Analytics',
+                'description' => 'Advanced analytics and reporting features',
+                'is_active' => true,
+                'environments' => [
+                    'local' => ['enabled' => true, 'percentage' => 100],
+                    'development' => ['enabled' => true, 'percentage' => 100],
+                    'staging' => ['enabled' => true, 'percentage' => 75],
+                    'production' => ['enabled' => true, 'percentage' => 10]
+                ]
             ],
             [
-                'name' => 'file_sharing',
-                'key' => 'file_sharing',
-                'description' => 'Upload and share files with team members and external users',
-                'enabled' => true,
-            ],
-            [
-                'name' => 'ai_assistant',
-                'key' => 'ai_assistant',
-                'description' => 'AI-powered virtual assistant for user support and automation',
-                'enabled' => false,
-            ],
+                'key' => 'premium_features',
+                'name' => 'Premium Features',
+                'description' => 'Premium tier features for paid users',
+                'is_active' => false,
+                'environments' => [
+                    'local' => ['enabled' => false, 'percentage' => 0],
+                    'development' => ['enabled' => false, 'percentage' => 0],
+                    'staging' => ['enabled' => false, 'percentage' => 0],
+                    'production' => ['enabled' => false, 'percentage' => 0]
+                ]
+            ]
         ];
 
-        foreach ($features as $feature) {
-            $flag = FeatureFlag::create($feature);
+        foreach ($flags as $flagData) {
+            $environments = $flagData['environments'];
+            unset($flagData['environments']);
 
-            // Create environment-specific settings
-            $environments = ['development', 'staging', 'production'];
-            
-            foreach ($environments as $index => $env) {
+            $flag = FeatureFlag::create($flagData);
+
+            foreach ($environments as $env => $settings) {
                 FeatureEnvironment::create([
                     'feature_flag_id' => $flag->id,
                     'environment' => $env,
-                    'enabled' => $env === 'development' ? true : ($env === 'staging' ? $flag->enabled : ($flag->enabled && rand(0, 1) === 1)),
-                    'rollout_percentage' => $env === 'production' ? rand(0, 100) : 100,
+                    'is_enabled' => $settings['enabled'],
+                    'rollout_percentage' => $settings['percentage']
                 ]);
             }
         }

@@ -13,15 +13,8 @@ return new class extends Migration
             $table->string('key')->unique();
             $table->string('name');
             $table->text('description')->nullable();
-            $table->enum('status', ['active', 'inactive', 'archived'])->default('active');
-            $table->boolean('global_enabled')->default(false);
-            $table->integer('percentage_rollout')->default(0);
-            $table->unsignedBigInteger('created_by')->nullable();
+            $table->boolean('is_active')->default(true);
             $table->timestamps();
-
-            $table->index(['key', 'status']);
-            $table->index('status');
-            $table->foreign('created_by')->references('id')->on('users')->onDelete('set null');
         });
     }
 
